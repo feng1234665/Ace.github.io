@@ -32,7 +32,7 @@ paginate_path: "page/:num/"
 
 # Comment
 comment:
-    disqus:Ace Blog
+    disqus:ace-blog-1
     # duoshuo: 
     
 # Social
