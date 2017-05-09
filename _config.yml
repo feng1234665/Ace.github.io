@@ -1,4 +1,4 @@
-# Basic
+﻿# Basic
 title: Ace Blog
 subtitle: Ace Blog
 welcome_message: Ace Blog
@@ -22,7 +22,7 @@ blog_button:
 
 # Navigation buttons in the front page.
 nav:
-   # - {title: Projects, description: My Projects, url: 'http://project.onevcat.com'}
+    - {title: QQ交流, description: QQ交流, url: 'http://wpa.qq.com/msgrd?v=3&uin=215234963&site=qq&menu=yes'}
     # - {title: Another Button, description: A button, url: 'http://example.com'}
 
 # Pagination
