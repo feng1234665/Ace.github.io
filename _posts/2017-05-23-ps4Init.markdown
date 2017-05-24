@@ -1,23 +1,29 @@
-#●准备工作
+---
+layout: post
+title: ps4初级配置
+date: 2017-05-23
+---
+
+# ●准备工作
 - ◇和unity对应版本的UnitySetup-Playstation-4-Support-for-Editor-xxxxx.exe，俗称unity add-on。
 
 - ◇能发布ps4的unity专业版licence
 - ◇索尼ps4 sdk环境
 - ◇索尼ps4开发机/测试机
 
-#●环境搭建
+# ●环境搭建
 - ◇测试机连接Lan网线、电源、以及通过usb连接ps4手柄，显示器接HDMI插口，进入ps4系统
 - ◇如果过期需要激活，每次激活似乎是6个月的期限，到达6个月要重新激活，不然安装的应用进不去（如何激活见后面）
 - ◇更新ps4系统，打开Neighborhood for ps4，点击System Update选择.PUP文件，.PUP文件在下载的sdk里
 - ◇安装完sdk后重启电脑，在我的电脑侧边栏会有一个栏叫Neighborhood for PlayStation(R)4，选中之后右键Add Network Target，确保连接上开发机/测试机（请保证在同一个局域网）
 - ◇如果在Neighborhood for PlayStation(R)4找不到开发机/测试机，则可以进入ps4系统Settings-Debug Settings-Boot Parameters-Release Check Mode看看是不是Development Mode或者Assist Mode
 
-#●开始发布
+# ●开始发布
 ![](/assets/images/ps4接入.png)
 发布设置中点击Build And Run即可
 
 
-#●如何激活PS4
+# ●如何激活PS4
 - ◇开发机
 打开Neighborhood for ps4，点击Active，选择从索尼官网https://ps4.scedev.net/hardware下载的激活文件.afv，进行激活，也可以直接把.afv文件拖拽到Neighborhood for ps4
 
@@ -31,7 +37,7 @@
 1. 将下载下来的.afv文件修改为ps4_activation.afv，拷贝到移动设备（如u盘）的根目录
 2. 插入到ps4测试机usb接口，然后选择Settings-Debug settings-Activation-Activate from USB
 
-#●常见问题
+# ●常见问题
 - ◇发布后出现各种shader报错？
 应该是当前sdk太新了，请查看unity版本所对应的sdk版本是否正确
 
