@@ -34,7 +34,7 @@ PS4Input.GetPadControllerInformation(playerId, out touchPixelDensity, out touchR
 ### 摇杆部分
 #### inputmanager设定轴名称 且设定type为joystick Axis
 |    摇杆名称    |  axis（摇杆轴）   | joyNum（对应玩家id）|
-| --------------|---------------|--------|
+| --------------|------------------|-------------------|
 |     左侧摇杆X轴     |    Xaxis |joystick1|
 |     左侧摇杆Y轴     |    Yaxis |joystick1|
 |     右侧摇杆X轴     |    4th axis |joystick1|
