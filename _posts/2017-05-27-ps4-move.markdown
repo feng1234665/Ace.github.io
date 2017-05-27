@@ -1,0 +1,157 @@
+---
+layout: post
+title: ps4 move controller
+date: 2017-05-27
+---
+
+能上代码不BB
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.PS4;
+using UnityEngine.PS4.VR;
+using UnityEngine.UI;
+using UnityEngine.VR;
+
+public class PSHand : MonoBehaviour
+{
+    public enum HandType
+    {
+        left,
+        right
+    }
+    public HandType type;
+    Vector3 point;
+    Quaternion rotion;
+    public PlayStationVRTrackingType trackingType = PlayStationVRTrackingType.Absolute;
+    public PlayStationVRTrackerUsage trackerUsageType = PlayStationVRTrackerUsage.OptimizedForHmdUser;
+    int devId = -1;
+    void Start()
+    {
+        VRSettings.enabled = true;
+        VRSettings.renderScale = 1.5f;
+        VRSettings.showDeviceView = true;
+        StartCoroutine(register());
+    }
+
+    public bool GetTouchDown()
+    {
+        return touchDown;
+    }
+    public bool GetTouch()
+    {
+        return pressing;
+    }
+
+    public bool GetTouchUp()
+    {
+        return touchUp;
+    }
+
+    bool pressing = false;
+
+    bool touchDown = false;
+    bool touchUp = false;
+    IEnumerator register()
+    {
+        while (!PS4Input.MoveIsConnected(0, 0) || !PS4Input.MoveIsConnected(0, 1))
+        {
+            yield return 0;
+        }
+        int[] primaryHandles = new int[1];
+        int[] secondaryHandles = new int[1];
+        PS4Input.MoveGetUsersMoveHandles(1, primaryHandles, secondaryHandles);
+        if (type == HandType.left)
+        {
+            devId = secondaryHandles[0];
+        }
+        else
+        {
+            devId = primaryHandles[0];
+
+        }
+        PlayStationVRResult result;
+        PlayStationVRTrackingColor trackedColor;
+
+        // Get the tracking for the primary Move device, and wait for it to start
+        result = Tracker.RegisterTrackedDevice(PlayStationVRTrackedDevice.DeviceMove, devId, trackingType, trackerUsageType);
+
+        if (result == PlayStationVRResult.Ok)
+        {
+            PlayStationVRTrackingStatus trackingStatusPrimary = new PlayStationVRTrackingStatus();
+
+            while (trackingStatusPrimary == PlayStationVRTrackingStatus.NotStarted)
+            {
+                Tracker.GetTrackedDeviceStatus(devId, out trackingStatusPrimary);
+                yield return null;
+            }
+
+            Tracker.GetTrackedDeviceLedColor(devId, out trackedColor);
+        }
+
+    }
+    void Update()
+    {
+        PlayStationVRResult result = PlayStationVRResult.Error;
+        result = Tracker.GetTrackedDevicePosition(devId, out point);
+        Tracker.GetTrackedDeviceOrientation(devId, out rotion);
+        if (result == PlayStationVRResult.Ok)
+        {
+            transform.localPosition = point;
+            transform.localRotation = rotion;
+        }
+        switch (type)
+        {
+            case HandType.left:
+                if (PS4Input.MoveGetAnalogButton(0, 1) > 0)
+                {
+                    PressProcess();
+                }
+                else
+                {
+                    NotPressProcess();
+                }
+                break;
+            case HandType.right:
+                if (PS4Input.MoveGetAnalogButton(0, 0) > 0)
+                {
+                    PressProcess();
+                }
+                else
+                {
+                    NotPressProcess();
+                }
+                break;
+        }
+
+
+    }
+
+    void PressProcess()
+    {
+        if (!pressing)
+        {
+            touchDown = true;
+            pressing = true;
+        }
+        else if (touchDown)
+        {
+            touchDown = false;
+        }
+    }
+    void NotPressProcess()
+    {
+        if (pressing)
+        {
+            touchUp = true;
+            pressing = false;
+        }
+        else if (touchUp)
+        {
+            touchUp = false;
+        }
+    }
+}
+
+```
