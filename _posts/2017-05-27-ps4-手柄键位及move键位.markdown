@@ -32,13 +32,4 @@ PS4Input.GetPadControllerInformation(playerId, out touchPixelDensity, out touchR
 | TOUCHPAD| Joystick1Button6      |    同上 中间触摸板是可以按下的|
 
 ### 摇杆部分
-|    摇杆名称    |    type（类型 摇杆）    |  axis（摇杆轴）   |joyNum（对应玩家id）|
-| --------------|---------------|--------|
-|     左侧摇杆X轴     | joystickAxis      |   Xaxis |joystick1|
-|     左侧摇杆Y轴     | joystickAxis      |   Yaxis |joystick1|
-|     右侧摇杆X轴     | joystickAxis      |   4th axis |joystick1|
-|     右侧摇杆Y轴     | joystickAxis      |   5th axis |joystick1|
-|     L2     | joystickAxis      |   8th axis |joystick1|
-|     R2     | joystickAxis      |   3rd axis |joystick1|
-|     左侧方向按键左右     | joystickAxis      |   6th axis |joystick1|
-|     左侧方向按键上下     | joystickAxis      |   7th axis |joystick1|
+|    摇杆名称    |    type（类型 摇杆）    |  axis（摇杆轴）   |joyNum（对应玩家id）|| --------------|---------------|--------||     左侧摇杆X轴     | joystickAxis      |   Xaxis |joystick1||     左侧摇杆Y轴     | joystickAxis      |   Yaxis |joystick1||     右侧摇杆X轴     | joystickAxis      |   4th axis |joystick1||     右侧摇杆Y轴     | joystickAxis      |   5th axis |joystick1||     L2     | joystickAxis      |   8th axis |joystick1||     R2    | joystickAxis      |   3rd axis |joystick1||     左侧方向按键左右     | joystickAxis      |   6th axis |joystick1||     左侧方向按键上下     | joystickAxis      |   7th axis |joystick1|
