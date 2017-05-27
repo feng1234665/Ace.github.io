@@ -1,0 +1,20 @@
+---
+layout: post
+title: 手柄及move键位
+date: 2017-05-27
+---
+
+### 手柄部分
+- 中部触摸板
+```
+PS4Input.GetPadControllerInformation(playerId, out touchPixelDensity, out touchResolutionX, out touchResolutionY, out analogDeadZoneLeft, out analogDeadZoneRight, out connectionType);
+		PS4Input.GetLastTouchData(playerId, out touchNum, out touch0x, out touch0y, out touch0id, out touch1x, out touch1y, out touch1id);
+```
+按键部分
+
+| 按键名称       | 对应键位       |  说明  |
+| ------------- |:-------------:|：-----:|
+| 三角      | right-aligned | $1600 |
+| 圆圈     | centered      |   $12 |
+| 方块 | are neat      |    $1 |
+| X | are neat      |    $1 |
