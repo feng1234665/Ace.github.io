@@ -3,18 +3,42 @@ layout: post
 title: 手柄及move键位
 date: 2017-05-27
 ---
+```
+注意 手柄按键设置 
+	○ 口 X △ L1 L2 左右摇杆按下 触摸板按下 为按键 使用input.getkey()进行调用
+	左右摇杆 方向键 L2 R2 为轴偏移 使用Input.GetAxis()进行调用
+	中间触摸板为单独API
 
+```
 ### 手柄部分
 - 中部触摸板
 ```
 PS4Input.GetPadControllerInformation(playerId, out touchPixelDensity, out touchResolutionX, out touchResolutionY, out analogDeadZoneLeft, out analogDeadZoneRight, out connectionType);
 		PS4Input.GetLastTouchData(playerId, out touchNum, out touch0x, out touch0y, out touch0id, out touch1x, out touch1y, out touch1id);
 ```
-按键部分
+### 按键部分
 
-| 按键名称       | 对应键位       |  说明  |
-| ------------- |:-------------:|：-----:|
-| 三角      | right-aligned | $1600 |
-| 圆圈     | centered      |   $12 |
-| 方块 | are neat      |    $1 |
-| X | are neat      |    $1 |
+|    按键名称    |    对应键位    |  说明   |
+| --------------|---------------|--------|
+|     三角      | Joystick1Button3 | joystick和button中间的数字为玩家ID 0号玩家为1累加 |
+|     圆圈     | Joystick1Button1      |   同上 |
+| 方块 | Joystick1Button2      |    同上 |
+| X | Joystick1Button0      |    同上 |
+| L1| Joystick1Button4      |    同上 |
+| L3| Joystick1Button8      |    同上 左侧摇杆也是按键 |
+| R1| Joystick1Button5      |    同上 |
+| R3| Joystick1Button9      |    同上 右侧摇杆也是按键|
+| OPTIONS| Joystick1Button7      |    同上 |
+| TOUCHPAD| Joystick1Button6      |    同上 中间触摸板是可以按下的|
+
+### 摇杆部分
+|    摇杆名称    |    type（类型 摇杆）    |  axis（摇杆轴）   |joyNum（对应玩家id）|
+| --------------|---------------|--------|
+|     左侧摇杆X轴     | joystickAxis      |   Xaxis |joystick1|
+|     左侧摇杆Y轴     | joystickAxis      |   Yaxis |joystick1|
+|     右侧摇杆X轴     | joystickAxis      |   4th axis |joystick1|
+|     右侧摇杆Y轴     | joystickAxis      |   5th axis |joystick1|
+|     L2     | joystickAxis      |   8th axis |joystick1|
+|     R2     | joystickAxis      |   3rd axis |joystick1|
+|     左侧方向按键左右     | joystickAxis      |   6th axis |joystick1|
+|     左侧方向按键上下     | joystickAxis      |   7th axis |joystick1|
