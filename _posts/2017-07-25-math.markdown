@@ -3,16 +3,20 @@ layout: post
 title: 数学
 date: 2017-07-25
 ---
-##三角公式
+
+## 三角公式
+
 ##### 直角三角形
 - Sin（a）角a的对边比斜边
 - Cos（a）角a的邻边比斜边
 - Tan（a）角a的对边比邻边
 - cot（a）角a的邻边比对边
+- 
 ##### 任意三角形
 - 第一余弦定理（任意三角形射影定理）
 	- 设△ABC的三边是a、b、c，它们所对的角分别是A、B、C，则有
 	- a=b·cos C+c·cos B， b=c·cos A+a·cos C， c=a·cos B+b·cos A
+	- 
 ##向量
 - 加法--相加得出一个新的向量
 	- (x,y,z)+(u,v,w)=(x+u,y+v,z+w);
