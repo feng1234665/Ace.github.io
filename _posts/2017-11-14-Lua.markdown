@@ -1,0 +1,257 @@
+---
+layout: post
+title: lua
+date: 2017-11-14
+---
+
+#LUA和C/C++的沟通桥梁——栈
+
+Lua生来就是为了和C交互的，因此使用C扩展Lua或者将Lua嵌入到C当中都是非常流行的做法。要想理解C和Lua的交互方式，首先要回顾一下C语言是如何处理函数参数的。
+C函数和参数
+
+大家知道C语言是用汇编实现的，在汇编语言中可没有函数的概念，与函数对应的是叫做子过程的东西，子过程就是一段指令，一个子过程与它调用的子过程之间通过栈来进行参数的传递交互。在一个子过程在调用别的子过程之前，会按照约定的格式将要调用的子过程需要的参数入栈，在被调用的子过程中，可以按照约定的规则将参数从栈中取出。同理，对于返回值的传递也同样是通过堆栈进行的。C语言约定的参数放入栈中的格式，就是“调用惯例”。C语言的函数原型则决定了压入栈中的参数的数量和类型。
+Lua的虚拟堆栈
+
+Lua和C之间的交互巧妙的模拟了C语言的堆栈，Lua和C语言之间的相互调用和访问都通过堆栈来进行，巧妙的解决了不同类型之间变量相互访问的问题。具体的，我们想象如下一个图
+
+由于C和Lua是不同层次的语言，因此C语言的变量和Lua中的变量以及函数不能直接的交互，我们假定C语言和Lua都有自己的“空间（C Space和Lua Space）”。而这两个空间之间的交互就通过上图中的这个虚拟堆栈来解决。为何采用虚拟堆栈的方式来进行交互呢？其目的是在提供强大的灵活性的同时避免交互时两种语言变量类型的组合爆炸。
+栈的使用解决了C和Lua之间两个不协调的问题：第一，Lua会自动进行垃圾收集，而C要求显示的分配存储单元，两者引起的矛盾。第二，Lua中的动态类型和C中的静态类型不一致引起的混乱。
+LuaAPI第一个程序 
+    
+	下载安装，LuaForWindows软件(http://download.csdn.net/download/ivastest/3713327),安装后，
+	会有../lua5.1/inclue/;../lua5.1/lib/这两文件，也就是我们编程要用的头文件，库文件; 
+    
+	或者，到官网(http://www.lua.org/download.html)下载源代码，自己编译出库文件，百度搜索
+	(vs2012编译使用lua)教程 `
+     
+    1.新建，Win32控制台应用程序——空项目， 
+    2.配置，附加包含目录，附加库目录，附加依赖项 
+
+---------------------------------------------------
+  
+	#include<iostream>  
+	using namespace std;  
+	  
+	#include<lua.hpp>  
+	/*#include<lua.hpp>其内容是： 
+	extern "C" { 
+	#include "lua.h" 
+	#include "lualib.h" 
+	#include "lauxlib.h" 
+	} 
+	*/  
+	  
+	//#pragma comment(lib, "lua5.1.lib")                      // 这个是 Debug 版.  
+	//#pragma comment(lib, "lua51.lib")                     // 这个是 Release 版.  
+  
+/* 
+C语言读写Lua全局变量（基本类型） 
+C语言读取Lua的全局变量是一种最简单的操作。通过上图我们可以猜测到，如果通过C语言读取Lua中的全局变量需要两步：1、将全局变量从Lua Space压入虚拟堆栈；2、从堆栈将全局变量读取到C语言Space中。在Lua和C的交互中，Lua无法看到和操作虚拟堆栈，仅在C语言中有操作堆栈的权利，因此前面说到的两步全都是在C语言中完成的。 
+*/  
+
+	void get_global(lua_State *L)  
+	{  
+	    int global_var1;  
+	    lua_getglobal(L, "global_var1"); /* 从lua的变量空间中将全局变量global_var1读取出来放入虚拟堆栈中 */  
+	    global_var1 = lua_tonumber(L, -1); /* 从虚拟堆栈中读取刚才压入堆栈的变量，-1表示读取堆栈最顶端的元素 */  
+	    printf("Read global var from C: %d\n", global_var1);  
+	}  
+	  
+	int main()  
+	{  
+	    lua_State *l = luaL_newstate();// 创建 Lua 状态. 其实就是一个数据结构.  
+	    luaL_openlibs(l);// 加载所有标准库, math,table,os,debug,...  
+	    luaL_dofile(l,"test.lua");  
+	    //调试时，test.lua文件要与.cpp文件在同一目录；且test.lua的编码需要为ANSI格式，否则会执行失败(0:成功)，(1:失败)  
+	    get_global(l);  
+	    lua_close(l);  
+	    system("pause");  
+	    return 0;  
+	}  
+/* 
+test.lua文件内容： 
+
+	print("Hello world, from ",_VERSION,"!") 
+	global_var1 = 5 
+	print("Print global varb from lua", global_var1) 
+	 
+	输出： 
+	Hello world, from       Lua 5.1 ! 
+	Print global varb from lua      5 
+	Read global var from C: 5 
+	*/  
+  
+/* 
+Lua脚本的编译执行是相互独立的，在不同的线程上执 行。通过luaL_newstate()函数可以申请一个虚拟机，返回指针类型lua_State。今后其他所有Lua Api函数的调用都需要此指针作为第一参数，用来指定某个虚拟机。所以lua_State代表一个lua虚拟机对像，luaL_newstate()分配 一个虚拟机。lua类库管理着所有的虚拟机。销毁指定虚拟机的所有对像（如果有垃圾回收相关的无方法则会调用该方法）并收回所有由该虚拟机动态分配产生的 内存，在有些平台下我们不需要调用此函数，因为当主程序退出时，资源会被自然的释放掉，但是但一个长时间运行的程序，比如后台运行的web服务器，需要立 即回收虚拟机资源以避免内存过高占用。 
+*/  
+LuaAPI整理
+
+头文件lua.h定义了Lua提供的基础函数。其中包括创建一个新的Lua环境的函数（如lua_open），调用Lua函数（如lua_pcall）的函数，读取/写入Lua环境的全局变量的函数，注册可以被Lua代码调用的新函数的函数，等等。所有在lua.h中被定义的都有一个lua_前缀。
+头文件lauxlib.h定义了辅助库（auxiliary library ）提供的函数。同样，所有在其中定义的函数等都以luaL_打头（例如，luaL_loadbuffer）。辅助库利用lua.h中提供的基础函数提供了更高层次上的抽象；所有Lua标准库都使用了auxlib。基础API致力于economy and orthogonality，相反auxlib致力于实现一般任务的实用性。当然，基于你的程序的需要而创建其它的抽象也是非常容易的。需要铭记在心的是，auxlib没有存取Lua内部的权限。它完成它所有的工作都是通过正式的基本API。API中文介绍，Lua 5.1 参考手册
+堆栈
+
+Lua以一个严格的LIFO规则（后进先出；也就是说，始终存取栈顶）来操作栈。当你调用Lua时，它只会改变栈顶部分。你的Ｃ代码却有更多的自由；更明确的来讲，你可以查询栈上的任何元素，甚至是在任何一个位置插入和删除元素。栈中的元素通过索引值进行定位，其中栈顶是-1，栈底是1。 栈成员访问支持索引。需要注意的是：堆栈操作是基于栈顶的，就是说它只会去操作栈顶的值。
+C++数据传递到虚拟栈中
+
+
+	/* push functions (C -> stack)------>C空间与虚拟栈之间的操作 
+	C语言向虚拟栈中压人符合Lua数据类型(nil,number,string,table,function,userdata,thread)的变量 
+	 
+	LUA_API void  (lua_pushnil) (lua_State *L); 
+	LUA_API void  (lua_pushnumber) (lua_State *L, lua_Number n);--double,float 
+	LUA_API void  (lua_pushinteger) (lua_State *L, lua_Integer n);--int,long 
+	LUA_API void  (lua_pushlstring) (lua_State *L, const char *s, size_t l);--任意的字符串(char*类型，允许包含'\0'字符) 
+	LUA_API void  (lua_pushstring) (lua_State *L, const char *s);--以'\0'结束的字符串（const char*） 
+	LUA_API const char *(lua_pushvfstring) (lua_State *L, const char *fmt,va_list argp); 
+	LUA_API const char *(lua_pushfstring) (lua_State *L, const char *fmt, ...); 
+	LUA_API void  (lua_pushcclosure) (lua_State *L, lua_CFunction fn, int n); 
+	LUA_API void  (lua_pushboolean) (lua_State *L, int b); 
+	LUA_API void  (lua_pushlightuserdata) (lua_State *L, void *p); 
+	LUA_API int   (lua_pushthread) (lua_State *L); 
+	*/  
+Lua中的字符串不是以零为结束符的；它们依赖于一个明确的长度，因此可以包含任意的二进制数据。将字符串压入串的正式函数是lua_pushlstring，它要求一个明确的长度作为参数。对于以零结束的字符串，你可以用lua_pushstring（它用strlen来计算字符串长度）。
+Lua从来不保持一个指向外部字符串（或任何其它对象，除了C函数——它总是静态指针）的指针。对于它保持的所有字符串，Lua要么做一份内部的拷贝要么重新利用已经存在的字符串。因此，一旦这些函数返回之后你可以自由的修改或是释放你的缓冲区。
+虚拟栈数据传递到C++中
+
+
+	/*access functions (stack -> C)------>C空间与虚拟栈之间的操作 
+	--API提供了一套lua_is*函数来检查一个元素是否是一个指定的类型，*可以是任何Lua类型。lua_isnumber和lua_isstring函数不检查这个值是否是指定的类型，而是看它是否能被转换成指定的那种类型。 
+	LUA_API int             (lua_isnumber) (lua_State *L, int idx); 
+	LUA_API int             (lua_isstring) (lua_State *L, int idx); 
+	LUA_API int             (lua_iscfunction) (lua_State *L, int idx); 
+	LUA_API int             (lua_isuserdata) (lua_State *L, int idx); 
+	LUA_API int             (lua_type) (lua_State *L, int idx); 
+	LUA_API const char  *(lua_typename) (lua_State *L, int tp); 
+ 
+	--API提供了虚拟栈上的两个数据的关系 
+	LUA_API int            (lua_equal) (lua_State *L, int idx1, int idx2);--索引 index1 和 index2 中的值相同的话，返回 1 。否则返回 0 。如果任何一个索引无效也会返回 0。 
+	LUA_API int            (lua_rawequal) (lua_State *L, int idx1, int idx2); 
+	LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2); 
+	 
+	--虚拟栈上的lua类型的数据转换成符合C++语言数据类型的数据(int,double,char*,function,void,struct/class(userdata),指针) 
+	LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx); 
+	LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx); 
+	LUA_API int             (lua_toboolean) (lua_State *L, int idx); 
+	LUA_API const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len); 
+	LUA_API size_t          (lua_objlen) (lua_State *L, int idx); 
+	LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx); 
+	LUA_API void           *(lua_touserdata) (lua_State *L, int idx); 
+	LUA_API lua_State      *(lua_tothread) (lua_State *L, int idx); 
+	LUA_API const void     *(lua_topointer) (lua_State *L, int idx); 
+	*/  
+即使给定的元素的类型不正确，调用上面这些函数也没有什么问题。在这种情况下，lua_toboolean、lua_tonumber和lua_strlen返回0，其他函数返回NULL。由于ANSI C没有提供有效的可以用来判断错误发生数字值，所以返回的0是没有什么用处的。对于其他函数而言，我们一般不需要使用对应的lua_is*函数：我们只需要调用lua_is*，测试返回结果是否为NULL即可。
+Lua_tostring函数返回一个指向字符串的内部拷贝的指针。你不能修改它（使你想起那里有一个const）。只要这个指针对应的值还在栈内，Lua会保证这个指针一直有效。当一个C函数返回后，Lua会清理他的栈，所以，有一个原则：永远不要将指向Lua字符串的指针保存到访问他们的外部函数中。
+lua_tostring返回的字符串结尾总会有一个字符结束标志0，但是字符串中间也可能包含0，lua_strlen返回字符串的实际长度。特殊情况下，假定栈顶的值是一个字符串，下面的断言(assert)总是有效的：
+
+	const char *s = lua_tostring(L, -1);   //any Lua string   
+	size_t l = lua_strlen(L, -1);          // its length   
+	assert(s[l] == '\0');  
+	assert(strlen(s) <= l);  
+	Lua数据传递到虚拟栈中
+	
+	/*get functions (Lua -> stack)------>Lua空间与虚拟栈之间的操作 
+ 
+LUA_API void  (lua_gettable) (lua_State *L, int idx);//把 t[k] 值压入堆栈，这里的 t 是指有效索引 index 指向的值，而 k 则是栈顶放的值。这个函数会弹出堆栈上的 key （把结果放在栈上相同位置）。在 Lua 中，这个函数可能触发对应 "index" 事件的元方法 
+
+	lua_getglobal(L, "mytable") <== push mytable 
+	lua_pushnumber(L, 1)        <== push key 1 
+	lua_gettable(L, -2)         <== pop key 1, push mytable[1] 
+	 
+	LUA_API void  (lua_getfield) (lua_State *L, int idx, const char *k);//把 t[k] 值压入堆栈，这里的 t 是指有效索引 index 指向的值。在 Lua 中，这个函数可能触发对应 "index" 事件的元方法 
+	lua_getglobal(L, "mytable") <== push mytable 
+	lua_getfield(L, -1, "x")    <== push mytable["x"]，作用同下面两行调用 
+	--lua_pushstring(L, "x")    <== push key "x" 
+	--lua_gettable(L,-2)        <== pop key "x", push mytable["x"] 
+	 
+	LUA_API void  (lua_rawget) (lua_State *L, int idx);//类似于 Lua_gettable，但是作一次直接访问（不触发元方法）。 
+	LUA_API void  (lua_rawgeti) (lua_State *L, int idx, int n);//把 t[n] 的值压栈，这里的 t 是指给定索引 index 处的一个值。这是一个直接访问；就是说，它不会触发元方法。 
+	lua_getglobal(L, "mytable") <== push mytable 
+	lua_rawgeti(L, -1, 1)       <== push mytable[1]，作用同下面两行调用 
+	--lua_pushnumber(L, 1)      <== push key 1 
+	--lua_rawget(L,-2)          <== pop key 1, push mytable[1] 
+ 
+LUA_API void  (lua_createtable) (lua_State *L, int narr, int nrec);//创建一个新的空 table 压入堆栈。这个新 table 将被预分配 narr 个元素的数组空间以及 nrec 个元素的非数组空间。当你明确知道表中需要多少个元素时，预分配就非常有用。如果你不知道，可以使用函数 Lua_newtable。 
+ 
+LUA_API void *(lua_newuserdata) (lua_State *L, size_t sz);//这个函数分配分配一块指定大小的内存块，把内存块地址作为一个完整的 userdata 压入堆栈，并返回这个地址。 
+userdata 代表 Lua 中的 C 值。完整的 userdata 代表一块内存。它是一个对象（就像 table 那样的对象）：你必须创建它，它有着自己的元表，而且它在被回收时，可以被监测到。一个完整的 userdata 只和它自己相等（在等于的原生作用下）。 
+当 Lua 通过 gc 元方法回收一个完整的 userdata 时， Lua 调用这个元方法并把 userdata 标记为已终止。等到这个 userdata 再次被收集的时候，Lua 会释放掉相关的内存。 
+LUA_API int   (lua_getmetatable) (lua_State *L, int objindex);//把给定索引指向的值的元表压入堆栈。如果索引无效，或是这个值没有元表，函数将返回 0 并且不会向栈上压任何东西。 
+LUA_API void  (lua_getfenv) (lua_State *L, int idx);//把索引处值的环境表压入堆栈。 
+*/  
+虚拟栈数据传递到Lua空间中
+
+	/*set functions (stack -> Lua)------>Lua空间与虚拟栈之间的操作 
+	 
+	LUA_API void  (lua_settable) (lua_State *L, int idx);作一个等价于 t[k] = v 的操作，这里 t 是一个给定有效索引 index 处的值， v 指栈顶的值，而 k 是栈顶之下的那个值。这个函数会把键和值都从堆栈中弹出。和在 Lua 中一样，这个函数可能触发 "newindex" 事件的元方法。eg: 
+	lua_getglobal(L, "mytable") <== push mytable 
+	lua_pushnumber(L, 1)        <== push key 1 
+	lua_pushstring(L, "abc")    <== push value "abc" 
+	lua_settable(L, -3)         <== mytable[1] = "abc", pop key & value 
+	 
+	LUA_API void  (lua_setfield) (lua_State *L, int idx, const char *k);//做一个等价于 t[k] = v 的操作，这里 t 是给出的有效索引 index 处的值，而 v 是栈顶的那个值。这个函数将把这个值弹出堆栈。跟在 Lua 中一样，这个函数可能触发一个 "newindex" 事件的元方法。eg: 
+	lua_getglobal(L, "mytable") <== push mytable 
+	lua_pushstring(L, "abc")    <== push value "abc" 
+	lua_setfield(L, -2, "x")    <== mytable["x"] = "abc", pop value "abc" 
+	 
+	LUA_API void  (lua_rawset) (lua_State *L, int idx);//类似于 Lua_settable，但是是作一个直接赋值（不触发元方法）。 
+	LUA_API void  (lua_rawseti) (lua_State *L, int idx, int n);//等价于 t[n] = v，这里的 t 是指给定索引 index 处的一个值，而 v 是栈顶的值。函数将把这个值弹出栈。赋值操作是直接的；就是说，不会触发元方法。 
+	lua_getglobal(L, "mytable") <== push mytable 
+	lua_pushstring(L, "abc")    <== push value "abc" 
+	lua_rawseti(L, -2, 1)       <== mytable[1] = "abc", pop value "abc" 
+	 
+	LUA_API int   (lua_setmetatable) (lua_State *L, int objindex);//把一个 table 弹出堆栈，并将其设为给定索引处的值的 metatable 。 
+	LUA_API int   (lua_setfenv) (lua_State *L, int idx);//从堆栈上弹出一个 table 并把它设为指定索引处值的新环境。如果指定索引处的值即不是函数又不是线程或是 userdata ， Lua_setfenv 会返回 0 ，否则返回 1 。 
+	*/  
+虚拟栈基本操作
+
+
+	/* basic stack manipulation--基础栈操作 
+	LUA_API int   (lua_gettop) (lua_State *L);//获取栈的高度，它也是栈顶元素的索引。注意一个负数索引-x对应于正数索引gettop-x+1 
+	LUA_API void  (lua_settop) (lua_State *L, int idx);//设置栈的高度。如果开始的栈顶高于新的栈顶，顶部的值被丢弃。否则，为了得到指定的大小这个函数压入相应个数的空值（nil）到栈上。特别的，lua_settop(L,0)清空堆栈。 
+	LUA_API void  (lua_pushvalue) (lua_State *L, int idx);//压入堆栈上指定索引的一个抟贝到栈顶,【增加一个元素到栈顶】 
+	LUA_API void  (lua_remove) (lua_State *L, int idx);//移除指定索引位置的元素，并将其上面所有的元素下移来填补这个位置的空白，【删除了一个元素】 
+	LUA_API void  (lua_insert) (lua_State *L, int idx);//移动栈顶元素到指定索引的位置，并将这个索引位置上面的元素全部上移至栈顶被移动留下的空隔，【没有增加一个元素，移动了元素的位置】 
+	LUA_API void  (lua_replace) (lua_State *L, int idx);//从栈顶弹出元素值并将其设置到指定索引位置，没有任何移动操作。【删除了一个元素，替换掉指定的元素】 
+	LUA_API int   (lua_checkstack) (lua_State *L, int sz);//检查栈上是否有能插入n个元素的空间;没有返回0 
+	LUA_API void  (lua_xmove) (lua_State *from, lua_State *to, int n);//将一个堆栈上的从栈顶起的n个元素  移到另一个堆栈上 
+ 
+lua的堆栈保持着后进先出的原则。如果栈开始于 10 20 30 40 50*（自底向上；`*´ 标记了栈顶），那么： 
+lua_pushvalue(L, 3)    --> 10 20 30 40 50 30* 
+lua_pushvalue(L, -1)   --> 10 20 30 40 50 30 30* 
+lua_remove(L, -3)      --> 10 20 30 40 30 30* 
+lua_remove(L, 6)      --> 10 20 30 40 30* 
+lua_insert(L, 1)      --> 30 10 20 30 40* 
+lua_insert(L, -1)      --> 30 10 20 30 40* (no effect) 
+lua_replace(L, 2)      --> 30 40 20 30* 
+lua_settop(L, -3)      --> 30 40* 
+lua_settop(L, 6)      --> 30 40 nil nil nil nil* 
+*/  
+宏定义
+
+	#define lua_pop(L,n)        lua_settop(L, -(n)-1) 
+	#define lua_newtable(L)     lua_createtable(L, 0, 0) 
+	#define lua_register(L,n,f) (lua_pushcfunction(L, (f)), lua_setglobal(L, (n))) 
+	#define lua_pushcfunction(L,f)  lua_pushcclosure(L, (f), 0) 
+	#define lua_strlen(L,i)     lua_objlen(L, (i)) 
+	 
+	#define lua_isfunction(L,n) (lua_type(L, (n)) == LUA_TFUNCTION) 
+	#define lua_istable(L,n)    (lua_type(L, (n)) == LUA_TTABLE) 
+	#define lua_islightuserdata(L,n)    (lua_type(L, (n)) == LUA_TLIGHTUSERDATA) 
+	#define lua_isnil(L,n)      (lua_type(L, (n)) == LUA_TNIL) 
+	#define lua_isboolean(L,n)  (lua_type(L, (n)) == LUA_TBOOLEAN) 
+	#define lua_isthread(L,n)   (lua_type(L, (n)) == LUA_TTHREAD) 
+	#define lua_isnone(L,n)     (lua_type(L, (n)) == LUA_TNONE) 
+	#define lua_isnoneornil(L, n)   (lua_type(L, (n)) <= 0) 
+	 
+	#define lua_pushliteral(L, s)   lua_pushlstring(L, "" s, (sizeof(s)/sizeof(char))-1) 
+	#define lua_setglobal(L,s)  lua_setfield(L, LUA_GLOBALSINDEX, (s)) 
+	#define lua_getglobal(L,s)  lua_getfield(L, LUA_GLOBALSINDEX, (s)) 
+	#define lua_tostring(L,i)   lua_tolstring(L, (i), NULL) 
+	 
+	 
+	//compatibility macros and functions 
+	#define lua_open()  luaL_newstate() 
+	#define lua_getregistry(L)  lua_pushvalue(L, LUA_REGISTRYINDEX) 
+	#define lua_getgccount(L)   lua_gc(L, LUA_GCCOUNT, 0) 
+	#define lua_Chunkreader     lua_Reader 
+	#define lua_Chunkwriter     lua_Writer 
