@@ -3,7 +3,6 @@ layout: post
 title: C++对象绑定到lua
 date: 2017-11-16
 ---
-# C++对象绑定到lua
 
 ### lua.hpp
     // lua.hpp  
